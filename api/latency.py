@@ -28,7 +28,7 @@ def p95(values):
     d1 = s[c] * (k - f)
     return float(d0 + d1)
 
-@app.post("/")
+@app.post("/api/latency")
 def latency_metrics(payload: dict = Body(..., example={"regions": ["emea","apac"], "threshold_ms": 187})):
     regions = payload.get("regions")
     threshold = payload.get("threshold_ms")
