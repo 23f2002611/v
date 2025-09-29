@@ -1,12 +1,19 @@
 from fastapi import FastAPI, Body, HTTPException
-
+from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import json
 from statistics import mean
 import math
 
 app = FastAPI(title="eShopCo Latency Metrics")
-
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for testing
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load telemetry bundle at cold start
 DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "telemetry.json"
