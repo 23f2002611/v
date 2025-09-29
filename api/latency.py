@@ -1,20 +1,10 @@
-from fastapi import FastAPI, Body, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Body, HTTPException, Request, Response
 from pathlib import Path
 import json
 from statistics import mean
 import math
 
 app = FastAPI(title="eShopCo Latency Metrics")
-
-# CRITICAL: Add CORS middleware BEFORE any routes
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # This sets Access-Control-Allow-Origin: *
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Load telemetry bundle at cold start
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "telemetry.json"
@@ -33,6 +23,25 @@ def p95(values):
     d0 = s[f] * (c - k)
     d1 = s[c] * (k - f)
     return float(d0 + d1)
+
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "*"
+    return response
+
+@app.options("/api/latency")
+async def options_handler():
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*"
+        }
+    )
 
 @app.post("/api/latency")
 def latency_metrics(payload: dict = Body(...)):
