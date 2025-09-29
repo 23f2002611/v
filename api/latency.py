@@ -30,8 +30,6 @@ def p95(values):
 
 @app.post("/")
 def latency_metrics(payload: dict = Body(..., example={"regions": ["emea","apac"], "threshold_ms": 187})):
-    if not isinstance(payload, dict):
-        raise HTTPException(status_code=400, detail="Invalid JSON body")
     regions = payload.get("regions")
     threshold = payload.get("threshold_ms")
     if not isinstance(regions, list) or not all(isinstance(r, str) for r in regions):
@@ -39,21 +37,14 @@ def latency_metrics(payload: dict = Body(..., example={"regions": ["emea","apac"
     if not isinstance(threshold, (int, float)):
         raise HTTPException(status_code=400, detail="`threshold_ms` must be a number")
 
-    # Build region -> metrics
     out = {}
     for region in regions:
         rows = [r for r in TELEMETRY if r.get("region") == region]
         lat = [r["latency_ms"] for r in rows]
         up  = [r["uptime_pct"] for r in rows]
 
-        # If region not present, return empty metrics with zeros
         if not rows:
-            out[region] = {
-                "avg_latency": 0.0,
-                "p95_latency": 0.0,
-                "avg_uptime": 0.0,
-                "breaches": 0
-            }
+            out[region] = {"avg_latency": 0.0, "p95_latency": 0.0, "avg_uptime": 0.0, "breaches": 0}
             continue
 
         breaches = sum(1 for v in lat if v > threshold)
