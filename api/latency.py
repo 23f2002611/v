@@ -11,9 +11,10 @@ app = FastAPI(title="eShopCo Latency Metrics")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["POST", "OPTIONS"],
+    allow_methods=["*"],   # allow all methods (GET, POST, OPTIONS, etc.)
     allow_headers=["*"],
 )
+
 
 # Load telemetry bundle at cold start
 DATA_PATH = Path(__file__).resolve().parents[1] / "data" / "telemetry.json"
