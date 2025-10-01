@@ -6,7 +6,7 @@ import math
 
 app = FastAPI(title="eShopCo Latency Metrics")
 
-DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "telemetry.json"
+DATA_PATH = Path(__file__).resolve().parent / "data" / "telemetry.json"
 with DATA_PATH.open() as f:
     TELEMETRY = json.load(f)
 
