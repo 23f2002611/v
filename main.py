@@ -1,8 +1,9 @@
-from fastapi import FastAPI, Body, HTTPException, Request, Response
+from fastapi import FastAPI, Body, HTTPException
 from pathlib import Path
 import json
 from statistics import mean
 import math
+
 app = FastAPI(title="eShopCo Latency Metrics")
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "telemetry.json"
@@ -52,3 +53,5 @@ def latency_metrics(payload: dict = Body(...)):
         out[region] = metrics
     
     return out
+
+# 👇 Vercel requires a callable `app` at module-level, so nothing else needed.
