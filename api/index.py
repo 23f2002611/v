@@ -9,14 +9,15 @@ import math
 app = FastAPI(title="eShopCo Latency Metrics")
 
 # ======================
-# CORS - Add middleware
+# CORS - Explicitly enable for POST
 # ======================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # ======================
@@ -53,6 +54,20 @@ def p95(values):
 @app.get("/")
 def root():
     return {"status": "ok", "service": "eShopCo Latency Metrics"}
+
+# ======================
+# OPTIONS handler for /api/latency
+# ======================
+@app.options("/api/latency")
+def latency_options():
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Accept",
+        }
+    )
 
 # ======================
 # Latency POST endpoint
@@ -98,7 +113,14 @@ def latency_metrics(payload: dict = Body(...)):
             "breaches": breaches
         }
     
-    return out
+    return JSONResponse(
+        content=out,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 # ======================
 # Healthcheck
