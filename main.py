@@ -7,13 +7,12 @@ import math
 
 app = FastAPI(title="eShopCo Latency Metrics")
 
-# ✅ CORS Middleware (must be right after app definition)
-origins = ["*"]  # change to ["https://your-portal.com"] if credentials/cookies are needed
+# ✅ Enable CORS for all routes and origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=False,  # must be False when using ["*"]
-    allow_methods=["*"],
+    allow_origins=["*"],  # allow all origins
+    allow_credentials=False,
+    allow_methods=["*"],  # allow GET, POST, OPTIONS, etc.
     allow_headers=["*"],
 )
 
@@ -25,6 +24,7 @@ if DATA_PATH.exists():
 else:
     TELEMETRY = []
 
+# ✅ P95 helper
 def p95(values):
     if not values:
         return None
@@ -38,6 +38,7 @@ def p95(values):
     d1 = s[c] * (k - f)
     return float(d0 + d1)
 
+# ✅ POST endpoint for latency metrics
 @app.post("/api/latency")
 def latency_metrics(payload: dict = Body(...)):
     regions = payload.get("regions")
@@ -74,7 +75,12 @@ def latency_metrics(payload: dict = Body(...)):
     
     return out
 
-# ✅ simple healthcheck route (helps debug CORS)
+# ✅ Healthcheck route
 @app.get("/api/ping")
 def ping():
     return {"msg": "pong"}
+
+# ✅ Explicit OPTIONS handler (optional, improves compatibility with some serverless platforms)
+@app.options("/api/latency")
+def latency_options():
+    return {}
