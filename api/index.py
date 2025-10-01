@@ -1,5 +1,5 @@
-from fastapi import FastAPI, Body, Request, Response
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, Body
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import json
@@ -9,35 +9,27 @@ import math
 app = FastAPI(title="eShopCo Latency Metrics")
 
 # ======================
-# CORS - Force on every response
+# CORS - Add middleware
 # ======================
-@app.middleware("http")
-async def force_cors(request: Request, call_next):
-    if request.method == "OPTIONS":
-        return Response(
-            content="",
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                "Access-Control-Allow-Headers": "*",
-            }
-        )
-    
-    response = await call_next(request)
-    response.headers["Access-Control-Allow-Origin"] = "*"
-    response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
-    response.headers["Access-Control-Allow-Headers"] = "*"
-    return response
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ======================
 # Load telemetry data
 # ======================
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "telemetry.json"
-if DATA_PATH.exists():
-    with DATA_PATH.open() as f:
-        TELEMETRY = json.load(f)
-else:
-    TELEMETRY = []
+TELEMETRY = []
+try:
+    if DATA_PATH.exists():
+        with DATA_PATH.open() as f:
+            TELEMETRY = json.load(f)
+except Exception as e:
+    print(f"Error loading telemetry: {e}")
 
 # ======================
 # P95 helper function
@@ -56,45 +48,35 @@ def p95(values):
     return float(d0 + d1)
 
 # ======================
-# Root handler (for redirects)
+# Root handler
 # ======================
 @app.get("/")
 def root():
-    return JSONResponse(
-        content={"status": "ok", "service": "eShopCo Latency Metrics"},
-        headers={
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-        }
-    )
+    return {"status": "ok", "service": "eShopCo Latency Metrics"}
 
 # ======================
 # Latency POST endpoint
 # ======================
 @app.post("/api/latency")
-@app.post("/latency")
 def latency_metrics(payload: dict = Body(...)):
-    regions = payload.get("regions")
-    threshold = payload.get("threshold_ms")
+    regions = payload.get("regions", [])
+    threshold = payload.get("threshold_ms", 0)
     
-    if not isinstance(regions, list) or not all(isinstance(r, str) for r in regions):
+    if not isinstance(regions, list):
         return JSONResponse(
             status_code=400,
-            content={"detail": "`regions` must be a list of strings"}
+            content={"detail": "regions must be a list"}
         )
     
     if not isinstance(threshold, (int, float)):
         return JSONResponse(
             status_code=400,
-            content={"detail": "`threshold_ms` must be a number"}
+            content={"detail": "threshold_ms must be a number"}
         )
     
     out = {}
     for region in regions:
         rows = [r for r in TELEMETRY if r.get("region") == region]
-        lat = [r["latency_ms"] for r in rows]
-        up  = [r["uptime_pct"] for r in rows]
         
         if not rows:
             out[region] = {
@@ -105,24 +87,25 @@ def latency_metrics(payload: dict = Body(...)):
             }
             continue
         
+        lat = [r["latency_ms"] for r in rows]
+        up = [r["uptime_pct"] for r in rows]
         breaches = sum(1 for v in lat if v > threshold)
-        metrics = {
+        
+        out[region] = {
             "avg_latency": round(mean(lat), 4),
             "p95_latency": round(p95(lat), 4),
             "avg_uptime": round(mean(up), 4),
             "breaches": breaches
         }
-        out[region] = metrics
     
-    return JSONResponse(content=out)
+    return out
 
 # ======================
 # Healthcheck
 # ======================
 @app.get("/api/ping")
-@app.get("/ping")
 def ping():
-    return JSONResponse(content={"msg": "pong"})
+    return {"msg": "pong"}
 
 # ======================
 # Favicon handler
@@ -131,7 +114,5 @@ def ping():
 def favicon():
     return Response(content=b"", media_type="image/x-icon")
 
-# ======================
-# Vercel serverless handler
-# ======================
+# Vercel handler
 handler = app
