@@ -5,6 +5,14 @@ from statistics import mean
 import math
 
 app = FastAPI(title="eShopCo Latency Metrics")
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Load telemetry bundle at cold start
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "telemetry.json"
