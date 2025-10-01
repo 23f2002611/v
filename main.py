@@ -75,6 +75,6 @@ def latency_metrics(payload: dict = Body(...)):
     return out
 
 # ✅ simple healthcheck route (helps debug CORS)
-@app.get("/ping")
+@app.get("/api/ping")
 def ping():
     return {"msg": "pong"}
