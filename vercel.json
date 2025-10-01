@@ -2,12 +2,13 @@
   "builds": [
     {
       "src": "main.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "15mb" }
     }
   ],
   "routes": [
     {
-      "src": "/api/latency",
+      "src": "/api/(.*)",
       "dest": "main.py"
     }
   ]
