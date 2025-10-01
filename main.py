@@ -1,25 +1,29 @@
 from fastapi import FastAPI, Body, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 import json
 from statistics import mean
 import math
 
-from fastapi.middleware.cors import CORSMiddleware
-
 app = FastAPI(title="eShopCo Latency Metrics")
 
-# Enable CORS for all origins
+# ✅ CORS Middleware (must be right after app definition)
+origins = ["*"]  # change to ["https://your-portal.com"] if credentials/cookies are needed
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or list specific domains
-    allow_credentials=True,
+    allow_origins=origins,
+    allow_credentials=False,  # must be False when using ["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ✅ Load telemetry data
 DATA_PATH = Path(__file__).resolve().parent / "data" / "telemetry.json"
-with DATA_PATH.open() as f:
-    TELEMETRY = json.load(f)
+if DATA_PATH.exists():
+    with DATA_PATH.open() as f:
+        TELEMETRY = json.load(f)
+else:
+    TELEMETRY = []
 
 def p95(values):
     if not values:
@@ -51,7 +55,12 @@ def latency_metrics(payload: dict = Body(...)):
         up  = [r["uptime_pct"] for r in rows]
         
         if not rows:
-            out[region] = {"avg_latency": 0.0, "p95_latency": 0.0, "avg_uptime": 0.0, "breaches": 0}
+            out[region] = {
+                "avg_latency": 0.0,
+                "p95_latency": 0.0,
+                "avg_uptime": 0.0,
+                "breaches": 0,
+            }
             continue
         
         breaches = sum(1 for v in lat if v > threshold)
@@ -65,4 +74,7 @@ def latency_metrics(payload: dict = Body(...)):
     
     return out
 
-# 👇 Vercel requires a callable `app` at module-level, so nothing else needed.
+# ✅ simple healthcheck route (helps debug CORS)
+@app.get("/ping")
+def ping():
+    return {"msg": "pong"}
