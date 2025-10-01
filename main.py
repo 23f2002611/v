@@ -81,6 +81,15 @@ def ping():
     return {"msg": "pong"}
 
 # ✅ Explicit OPTIONS handler (optional, improves compatibility with some serverless platforms)
+from fastapi.responses import JSONResponse
+
 @app.options("/api/latency")
 def latency_options():
-    return {}
+    return JSONResponse(
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST,OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        },
+    )
