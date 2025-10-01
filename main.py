@@ -39,15 +39,31 @@ def p95(values):
     return float(d0 + d1)
 
 # ✅ POST endpoint for latency metrics
+from fastapi.responses import JSONResponse
+@app.middleware("http")
+async def log_requests(request, call_next):
+    response = await call_next(request)
+    print(f"[DEBUG] {request.method} {request.url.path} headers={response.headers}")
+    return response
+
 @app.post("/api/latency")
 def latency_metrics(payload: dict = Body(...)):
     regions = payload.get("regions")
     threshold = payload.get("threshold_ms")
     
     if not isinstance(regions, list) or not all(isinstance(r, str) for r in regions):
-        raise HTTPException(status_code=400, detail="`regions` must be a list of strings")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "`regions` must be a list of strings"},
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
+    
     if not isinstance(threshold, (int, float)):
-        raise HTTPException(status_code=400, detail="`threshold_ms` must be a number")
+        return JSONResponse(
+            status_code=400,
+            content={"detail": "`threshold_ms` must be a number"},
+            headers={"Access-Control-Allow-Origin": "*"}
+        )
     
     out = {}
     for region in regions:
@@ -73,7 +89,8 @@ def latency_metrics(payload: dict = Body(...)):
         }
         out[region] = metrics
     
-    return out
+    return JSONResponse(content=out, headers={"Access-Control-Allow-Origin": "*"})
+
 
 # ✅ Healthcheck route
 @app.get("/api/ping")
