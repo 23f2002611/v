@@ -4,7 +4,18 @@ import json
 from statistics import mean
 import math
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="eShopCo Latency Metrics")
+
+# Enable CORS for all origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or list specific domains
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 DATA_PATH = Path(__file__).resolve().parent / "data" / "telemetry.json"
 with DATA_PATH.open() as f:
